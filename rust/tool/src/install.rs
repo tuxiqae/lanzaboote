@@ -2,6 +2,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::os::unix::prelude::PermissionsExt;
 use std::path::{Path, PathBuf};
+use std::str::FromStr;
 use std::process::Command;
 use std::string::ToString;
 
@@ -9,7 +10,7 @@ use anyhow::{anyhow, Context, Result};
 use nix::unistd::sync;
 use tempfile::TempDir;
 
-use crate::esp::{EspGenerationPaths, EspPaths};
+use crate::esp::{EspGenerationPaths, EspPaths, System};
 use crate::gc::Roots;
 use crate::generation::{Generation, GenerationLink};
 use crate::os_release::OsRelease;
@@ -84,9 +85,8 @@ impl Installer {
                 .rev()
                 .collect()
         };
-        self.install_generations_from_links(&links)?;
 
-        self.install_systemd_boot()?;
+        self.install_generations_from_links(&links)?;
 
         if self.broken_gens.is_empty() {
             log::info!("Collecting garbage...");
@@ -316,6 +316,7 @@ impl Installer {
         )
         .context("Failed to assemble lanzaboote image.")?;
 
+        self.install_systemd_boot(&generation.spec.bootspec.bootspec.system, &esp_gen_paths)?;
         generation_artifacts.add_signed(&lanzaboote_image, &esp_gen_paths.lanzaboote_image);
 
         Ok(())
@@ -329,14 +330,15 @@ impl Installer {
     /// to the ESP.
     ///
     /// Checking for the version also allows us to skip buggy systemd versions in the future.
-    fn install_systemd_boot(&self) -> Result<()> {
+    fn install_systemd_boot(&self, system: &str, esp_generation_paths: &EspGenerationPaths) -> Result<()> {
         let systemd_boot = self
             .systemd
-            .join("lib/systemd/boot/efi/systemd-bootx64.efi");
+            .join("lib/systemd/boot/efi")
+            .join(System::from_str(system)?.systemd_filename());
 
         let paths = [
-            (&systemd_boot, &self.esp_paths.efi_fallback),
-            (&systemd_boot, &self.esp_paths.systemd_boot),
+            (&systemd_boot, &esp_generation_paths.efi_fallback),
+            (&systemd_boot, &esp_generation_paths.systemd_boot),
         ];
 
         for (from, to) in paths {
