@@ -8,6 +8,7 @@ mod common;
 
 use common::{
     count_files, hash_file, remove_signature, setup_generation_link_from_toplevel, verify_signature,
+    target_system_double
 };
 
 /// Install two generations that point at the same toplevel.
@@ -17,16 +18,16 @@ fn do_not_install_duplicates() -> Result<()> {
     let esp = tempdir()?;
     let tmpdir = tempdir()?;
     let profiles = tempdir()?;
-    let toplevel = common::setup_toplevel(tmpdir.path())?;
+    let toplevel = common::setup_toplevel(tmpdir.path(), target_system_double())?;
 
-    let generation_link1 = setup_generation_link_from_toplevel(&toplevel, profiles.path(), 1)?;
-    let generation_link2 = setup_generation_link_from_toplevel(&toplevel, profiles.path(), 2)?;
+    let generation_link1 = setup_generation_link_from_toplevel(&toplevel, profiles.path(), target_system_double(), 1)?;
+    let generation_link2 = setup_generation_link_from_toplevel(&toplevel, profiles.path(), target_system_double(), 2)?;
     let generation_links = vec![generation_link1, generation_link2];
 
     let stub_count = || count_files(&esp.path().join("EFI/Linux")).unwrap();
     let kernel_and_initrd_count = || count_files(&esp.path().join("EFI/nixos")).unwrap();
 
-    let output1 = common::lanzaboote_install(0, esp.path(), generation_links)?;
+    let output1 = common::lanzaboote_install(0, esp.path(), target_system_double(), generation_links)?;
     assert!(output1.status.success());
     assert_eq!(stub_count(), 2, "Wrong number of stubs after installation");
     assert_eq!(
@@ -46,18 +47,18 @@ fn overwrite_unsigned_images() -> Result<()> {
     let image1 = image_path(&esp, 1);
     let image2 = image_path(&esp, 2);
 
-    let generation_link1 = common::setup_generation_link(tmpdir.path(), profiles.path(), 1)?;
-    let generation_link2 = common::setup_generation_link(tmpdir.path(), profiles.path(), 2)?;
+    let generation_link1 = common::setup_generation_link(tmpdir.path(), profiles.path(), target_system_double(), 1)?;
+    let generation_link2 = common::setup_generation_link(tmpdir.path(), profiles.path(), target_system_double(), 2)?;
     let generation_links = vec![generation_link1, generation_link2];
 
-    let output1 = common::lanzaboote_install(0, esp.path(), generation_links.clone())?;
+    let output1 = common::lanzaboote_install(0, esp.path(), target_system_double(), generation_links.clone())?;
     assert!(output1.status.success());
 
     remove_signature(&image1)?;
     assert!(!verify_signature(&image1)?);
     assert!(verify_signature(&image2)?);
 
-    let output2 = common::lanzaboote_install(0, esp.path(), generation_links)?;
+    let output2 = common::lanzaboote_install(0, esp.path(), target_system_double(), generation_links)?;
     assert!(output2.status.success());
 
     assert!(verify_signature(&image1)?);
@@ -71,9 +72,9 @@ fn overwrite_unsigned_files() -> Result<()> {
     let esp = tempdir()?;
     let tmpdir = tempdir()?;
     let profiles = tempdir()?;
-    let toplevel = common::setup_toplevel(tmpdir.path())?;
+    let toplevel = common::setup_toplevel(tmpdir.path(), target_system_double())?;
 
-    let generation_link = setup_generation_link_from_toplevel(&toplevel, profiles.path(), 1)?;
+    let generation_link = setup_generation_link_from_toplevel(&toplevel, profiles.path(), target_system_double(), 1)?;
     let generation_links = vec![generation_link];
 
     let kernel_hash_source = hash_file(&toplevel.join("kernel"));
@@ -85,7 +86,7 @@ fn overwrite_unsigned_files() -> Result<()> {
     fs::write(&kernel_path, b"Existing kernel")?;
     let kernel_hash_existing = hash_file(&kernel_path);
 
-    let output0 = common::lanzaboote_install(1, esp.path(), generation_links)?;
+    let output0 = common::lanzaboote_install(1, esp.path(), target_system_double(), generation_links)?;
     assert!(output0.status.success());
 
     let kernel_hash_overwritten = hash_file(&kernel_path);

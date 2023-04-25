@@ -6,7 +6,7 @@ use tempfile::tempdir;
 
 mod common;
 
-use common::count_files;
+use common::{count_files, target_system_double};
 
 #[test]
 fn keep_only_configured_number_of_generations() -> Result<()> {
@@ -16,7 +16,7 @@ fn keep_only_configured_number_of_generations() -> Result<()> {
     let generation_links: Vec<PathBuf> = [1, 2, 3]
         .into_iter()
         .map(|v| {
-            common::setup_generation_link(tmpdir.path(), profiles.path(), v)
+            common::setup_generation_link(tmpdir.path(), profiles.path(), target_system_double(), v)
                 .expect("Failed to setup generation link")
         })
         .collect();
@@ -24,7 +24,7 @@ fn keep_only_configured_number_of_generations() -> Result<()> {
     let kernel_and_initrd_count = || count_files(&esp_mountpoint.path().join("EFI/nixos")).unwrap();
 
     // Install all 3 generations.
-    let output0 = common::lanzaboote_install(0, esp_mountpoint.path(), generation_links.clone())?;
+    let output0 = common::lanzaboote_install(0, esp_mountpoint.path(), target_system_double(), generation_links.clone())?;
     assert!(output0.status.success());
     assert_eq!(stub_count(), 3, "Wrong number of stubs after installation");
     assert_eq!(
@@ -34,7 +34,7 @@ fn keep_only_configured_number_of_generations() -> Result<()> {
     );
 
     // Call `lanzatool install` again with a config limit of 2 and assert that one is deleted.
-    let output1 = common::lanzaboote_install(2, esp_mountpoint.path(), generation_links)?;
+    let output1 = common::lanzaboote_install(2, esp_mountpoint.path(), target_system_double(), generation_links)?;
     assert!(output1.status.success());
     assert_eq!(stub_count(), 2, "Wrong number of stubs after gc.");
     assert_eq!(
@@ -54,13 +54,13 @@ fn keep_unrelated_files_on_esp() -> Result<()> {
     let generation_links: Vec<PathBuf> = [1, 2, 3]
         .into_iter()
         .map(|v| {
-            common::setup_generation_link(tmpdir.path(), profiles.path(), v)
+            common::setup_generation_link(tmpdir.path(), profiles.path(), target_system_double(), v)
                 .expect("Failed to setup generation link")
         })
         .collect();
 
     // Install all 3 generations.
-    let output0 = common::lanzaboote_install(0, esp_mountpoint.path(), generation_links.clone())?;
+    let output0 = common::lanzaboote_install(0, esp_mountpoint.path(), target_system_double(), generation_links.clone())?;
     assert!(output0.status.success());
 
     let unrelated_loader_config = esp_mountpoint.path().join("loader/loader.conf");
@@ -73,7 +73,7 @@ fn keep_unrelated_files_on_esp() -> Result<()> {
     fs::create_dir(&unrelated_firmware)?;
 
     // Call `lanzatool install` again with a config limit of 2.
-    let output1 = common::lanzaboote_install(2, esp_mountpoint.path(), generation_links)?;
+    let output1 = common::lanzaboote_install(2, esp_mountpoint.path(), target_system_double(), generation_links)?;
     assert!(output1.status.success());
 
     assert!(unrelated_loader_config.exists());
