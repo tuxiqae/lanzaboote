@@ -15,6 +15,13 @@ pub enum System {
 }
 
 impl System {
+    pub fn systemd_stub_filename(&self) -> &Path {
+        Path::new(match self {
+            Self::X86 => "linuxx64.efi.stub",
+            Self::AArch64 => "linuxaa64.efi.stub"
+        })
+    }
+
     pub fn systemd_filename(&self) -> &Path {
         Path::new(match self {
             Self::X86 => "systemd-bootx64.efi",
