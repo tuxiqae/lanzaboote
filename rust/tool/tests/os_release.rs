@@ -6,6 +6,8 @@ use tempfile::tempdir;
 
 mod common;
 
+use common::target_system_double;
+
 #[test]
 fn generate_expected_os_release() -> Result<()> {
     let esp_mountpoint = tempdir()?;
@@ -15,7 +17,7 @@ fn generate_expected_os_release() -> Result<()> {
     let generation_link = common::setup_generation_link(tmpdir.path(), profiles.path(), 1)
         .expect("Failed to setup generation link");
 
-    let output0 = common::lanzaboote_install(0, esp_mountpoint.path(), vec![generation_link])?;
+    let output0 = common::lanzaboote_install(0, esp_mountpoint.path(), target_system_double(), vec![generation_link])?;
     assert!(output0.status.success());
 
     let stub_data = fs::read(
