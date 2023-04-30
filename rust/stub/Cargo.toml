@@ -19,6 +19,9 @@ log = { version = "0.4.17", default-features = false, features = [ "max_level_in
 sha2 = { version = "0.10.6", default-features = false, features = ["force-soft"] }
 # SHA1 for TPM TCG interface version 1.
 sha1_smol = "1.0.0"
+# std::io for alloc/no_std
+# FIXME: I don't want this extra dependency actually.
+acid_io = { git = "https://github.com/dataphract/acid_io", default-features = false, features = [ "alloc" ] }
 
 [profile.release]
 opt-level = "s"

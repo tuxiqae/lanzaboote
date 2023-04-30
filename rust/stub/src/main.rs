@@ -12,6 +12,8 @@ mod pe_section;
 mod tpm;
 mod uefi_helpers;
 mod unified_sections;
+mod cpio;
+mod initrd;
 
 use alloc::vec::Vec;
 use efivars::{export_efi_variables, get_loader_features, EfiLoaderFeatures};
@@ -33,6 +35,7 @@ use uefi::{
 use crate::{
     linux_loader::InitrdLoader,
     uefi_helpers::{booted_image_file, read_all},
+    initrd::CompanionInitrd
 };
 
 type Hash = sha2::digest::Output<Sha256>;
@@ -266,6 +269,48 @@ fn main(handle: Handle, mut system_table: SystemTable<Boot>) -> Status {
         }
     }
     export_efi_variables(&system_table).expect("Failed to export stub EFI variables");
+
+    let mut initrds = Vec::with_capacity(6);
+    if let Ok(mut simple_filesystem) = system_table.boot_services().get_image_file_system(handle) {
+        if let Ok(Some(credentials_initrd)) = cpio::pack_cpio(system_table.boot_services(),
+            &mut simple_filesystem,
+            None,
+            cstr16!(".cred"),
+            ".extra/credentials",
+            0o500,
+            0o400,
+            measure::TPM_PCR_INDEX_KERNEL_PARAMETERS,
+            "Credentials initrd") {
+            initrds.push(CompanionInitrd::Credentials(credentials_initrd));
+        }
+
+        if let Ok(Some(global_credentials_initrd)) = cpio::pack_cpio(system_table.boot_services(),
+            &mut simple_filesystem,
+            Some(cstr16!("\\loader\\credentials")),
+            cstr16!(".cred"),
+            ".extra/global_credentials",
+            0o500,
+            0o400,
+            measure::TPM_PCR_INDEX_KERNEL_PARAMETERS,
+            "Global credentials initrd") {
+            initrds.push(CompanionInitrd::GlobalCredentials(global_credentials_initrd));
+        }
+
+        if let Ok(Some(sysext_initrd)) = cpio::pack_cpio(system_table.boot_services(),
+            &mut simple_filesystem,
+            None,
+            cstr16!(".raw"),
+            ".extra/sysext",
+            0o500,
+            0o400,
+            measure::TPM_PCR_INDEX_KERNEL_PARAMETERS,
+            "System extension initrd") {
+            initrds.push(CompanionInitrd::SystemExtension(sysext_initrd));
+        }
+    }
+
+    // Let's export any StubPcr EFI variable we might need.
+    let _ = initrd::export_pcr_efi_variables(&system_table.runtime_services(), initrds);
 
     if is_kernel_hash_correct && is_initrd_hash_correct {
         boot_linux_unchecked(

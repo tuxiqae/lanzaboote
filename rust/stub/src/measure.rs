@@ -10,7 +10,21 @@ use crate::{
     uefi_helpers::PeInMemory, unified_sections::UnifiedSection,
 };
 
-const TPM_PCR_INDEX_KERNEL_IMAGE: PcrIndex = PcrIndex(11);
+/// This is the TPM PCR where lanzastub extends its payload into, before using them.
+/// All unified sections: kernel ELF image, embedded initrd, etc.
+/// Contrary to PCR4, it contains precomputable data because PCR4 contains
+/// the whole PE measured, this PCR is made of "static data".
+pub const TPM_PCR_INDEX_KERNEL_IMAGE: PcrIndex = PcrIndex(11);
+/// This is the TPM PCR where lanzastub extends the kernel command line and any passed credentials
+/// into.
+pub const TPM_PCR_INDEX_KERNEL_PARAMETERS: PcrIndex = PcrIndex(12);
+/// This is the TPM PCR where lanzastub extends the initrd system extension images into
+/// which we pass to the booted kernel.
+pub const TPM_PCR_INDEX_INITRD_SYSEXTS: PcrIndex = PcrIndex(13);
+/// This is the TPM PCR where we measure the root fs volume key (and maybe /var/'s) if it is split
+/// off.
+/// Unused at the moment in lanzastub.
+pub const TPM_PCR_INDEX_VOLUME_KEY: PcrIndex = PcrIndex(15);
 
 pub unsafe fn measure_image(
     system_table: &SystemTable<Boot>,
