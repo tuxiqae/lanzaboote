@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use anyhow::{Context, Result};
-use clap::{Parser, Subcommand};
+use clap::{Parser, Subcommand, Args};
 
 use crate::install;
 use crate::signature::KeyPair;
@@ -25,19 +25,21 @@ pub struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    Install(InstallCommand),
+    Install(InstallArgs),
 }
 
-#[derive(Parser)]
-struct InstallCommand {
-    /// Systemd path
-    #[arg(long)]
-    systemd: PathBuf,
+#[derive(Debug, Args)]
+struct InstallArgs {
+    #[command(subcommand)]
+    command: BootloaderCommand,
 
-    /// Systemd-boot loader config
-    #[arg(long)]
-    systemd_boot_loader_config: PathBuf,
+    #[command(flatten)]
+    generic_args: GenericBootloaderArgs,
+}
 
+#[derive(Debug, Args)]
+#[command(args_conflicts_with_subcommands = false)]
+struct GenericBootloaderArgs {
     /// sbsign Public Key
     #[arg(long)]
     public_key: PathBuf,
@@ -55,6 +57,34 @@ struct InstallCommand {
 
     /// List of generation links (e.g. /nix/var/nix/profiles/system-*-link)
     generations: Vec<PathBuf>,
+}
+
+#[derive(Debug, Subcommand)]
+enum BootloaderCommand {
+    SystemdBoot(SdBootArgs),
+    UBoot(UBootArgs),
+}
+
+#[derive(Debug, Parser)]
+struct UBootArgs {
+    /// Systemd path
+    #[arg(long)]
+    systemd: PathBuf,
+
+    /// Systemd-boot loader config
+    #[arg(long)]
+    systemd_boot_loader_config: PathBuf,
+}
+
+#[derive(Debug, Parser)]
+struct SdBootArgs {
+    /// Systemd path
+    #[arg(long)]
+    systemd: PathBuf,
+
+    /// Systemd-boot loader config
+    #[arg(long)]
+    systemd_boot_loader_config: PathBuf,
 }
 
 impl Cli {
@@ -82,20 +112,23 @@ impl Commands {
     }
 }
 
-fn install(args: InstallCommand) -> Result<()> {
+fn install(args: InstallArgs) -> Result<()> {
     let lanzaboote_stub =
         std::env::var("LANZABOOTE_STUB").context("Failed to read LANZABOOTE_STUB env variable")?;
 
-    let key_pair = KeyPair::new(&args.public_key, &args.private_key);
+    let key_pair = KeyPair::new(&args.generic_args.public_key, &args.generic_args.private_key);
 
-    install::Installer::new(
-        PathBuf::from(lanzaboote_stub),
-        args.systemd,
-        args.systemd_boot_loader_config,
-        key_pair,
-        args.configuration_limit,
-        args.esp,
-        args.generations,
-    )
-    .install()
+    match args.command {
+        BootloaderCommand::SystemdBoot(sd_boot_args) => install::Installer::new(
+            PathBuf::from(lanzaboote_stub),
+            sd_boot_args.systemd,
+            sd_boot_args.systemd_boot_loader_config,
+            key_pair,
+            args.generic_args.configuration_limit,
+            args.generic_args.esp,
+            args.generic_args.generations,
+        )
+        .install(),
+        _ => todo!()
+    }
 }
