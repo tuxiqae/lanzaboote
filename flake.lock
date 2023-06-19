@@ -77,16 +77,16 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1685071405,
-        "narHash": "sha256-qENk2wk0Zli0zeLDKMNcs8CfhPIHhtRQgPamlFUM/xw=",
-        "owner": "NixOS",
+        "lastModified": 1687136445,
+        "narHash": "sha256-TPxFaSBVmT0wb8ZBQW9Ao0HeTWLULA/dYFeWt6Af8EA=",
+        "owner": "RaitoBezarius",
         "repo": "nixpkgs",
-        "rev": "794a24afefde85c3e9b533443c4c73cd871f9e3a",
+        "rev": "2d3fb0263f0de88235f0634289949362db5f6821",
         "type": "github"
       },
       "original": {
-        "owner": "NixOS",
-        "ref": "nixos-unstable-small",
+        "owner": "RaitoBezarius",
+        "ref": "sd-addon-for-sb",
         "repo": "nixpkgs",
         "type": "github"
       }
