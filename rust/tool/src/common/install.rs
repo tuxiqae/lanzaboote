@@ -9,14 +9,14 @@ use anyhow::{anyhow, Context, Result};
 use nix::unistd::sync;
 use tempfile::TempDir;
 
-use crate::esp::{EspGenerationPaths, EspPaths};
-use crate::gc::Roots;
-use crate::generation::{Generation, GenerationLink};
-use crate::os_release::OsRelease;
-use crate::pe;
-use crate::signature::KeyPair;
-use crate::systemd::SystemdVersion;
-use crate::utils::{file_hash, SecureTempDirExt};
+use crate::common::esp::{EspGenerationPaths, EspPaths};
+use crate::common::gc::Roots;
+use crate::common::generation::{Generation, GenerationLink};
+use crate::common::os_release::OsRelease;
+use crate::common::pe;
+use crate::common::signature::KeyPair;
+use crate::systemd::version::SystemdVersion;
+use crate::common::utils::{file_hash, SecureTempDirExt};
 
 pub struct Installer {
     broken_gens: BTreeSet<u64>,

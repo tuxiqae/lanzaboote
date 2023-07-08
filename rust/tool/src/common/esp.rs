@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
 
-use crate::generation::Generation;
+use crate::common::generation::Generation;
 
 /// Paths to the boot files that are not specific to a generation.
 pub struct EspPaths {
